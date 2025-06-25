@@ -5,12 +5,18 @@ _ext
 *.so
 build/
 dist/
+uv.lock
 *.egg-info/
-
+videos/
+.amltconfig
+*.ipynb
+ManiSkill2_real2sim
+video.mp4
+.env
 # ipython/jupyter notebooks
 # *.ipynb
 **/.ipynb_checkpoints/
-
+dev/
 # Editor temporaries
 *.swn
 *.swo

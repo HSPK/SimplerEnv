@@ -8,12 +8,56 @@ import mediapy as media
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 from scipy.ndimage import binary_dilation
-
 FONT_PATH = str(Path(__file__) / "fonts/UbuntuMono-R.ttf")
 
 _rng = np.random.RandomState(0)
 _palette = ((_rng.random((3 * 255)) * 0.7 + 0.3) * 255).astype(np.uint8).tolist()
 _palette = [0, 0, 0] + _palette
+
+def make_grid(
+    images: np.ndarray | list[np.ndarray],
+    margin: int = 0,
+    spacing: int = 10,
+    background: tuple[int, int, int] = (0, 0, 0),
+) -> np.ndarray:
+    if isinstance(images, list):
+        images = np.stack(images)
+    assert images.ndim == 4, "Input should be a 4D array (N, H, W, C)"
+    num_images, height, width, channels = images.shape
+    grid_size = int(np.ceil(np.sqrt(num_images)))
+    grid_height = grid_size * height + (grid_size - 1) * spacing + 2 * margin
+    grid_width = grid_size * width + (grid_size - 1) * spacing + 2 * margin
+
+    grid = np.full((grid_height, grid_width, channels), background, dtype=images.dtype)
+    for idx, img in enumerate(images):
+        row = idx // grid_size
+        col = idx % grid_size
+        y_start = margin + row * (height + spacing)
+        y_end = y_start + height
+        x_start = margin + col * (width + spacing)
+        x_end = x_start + width
+        grid[y_start:y_end, x_start:x_end] = img
+    return grid
+
+def topil(image: np.ndarray | Image.Image, target_size: tuple[int, int] = None):
+    from PIL import Image
+
+    if isinstance(image, Image.Image):
+        if target_size is not None:
+            image = image.resize(target_size, Image.BILINEAR)
+        return image
+    if target_size is not None:
+        image = Image.fromarray(image).resize(target_size, Image.BILINEAR)
+    else:
+        image = Image.fromarray(image)
+    return image
+
+
+def save_video(images: list[np.ndarray | Image.Image], filename: str, fps: int = 30):
+    from moviepy.editor import ImageSequenceClip
+
+    clip = ImageSequenceClip([np.array(topil(img)) for img in images], fps=fps)
+    clip.write_videofile(filename, codec="libx264", audio=False)
 
 
 def write_video(path, images, fps=5):
